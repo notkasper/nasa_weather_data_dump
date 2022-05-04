@@ -13,18 +13,21 @@ const parameters = "T2M,RH2M,GWETROOT,GWETPROF,T2MWET,PRECTOTCORR";
 const format = "CSV";
 const runId = new Date().getTime().toString();
 const outputRoot = path.join(__dirname, "../data/");
+const errorDir = path.join(__dirname, "../errors/");
 const outputDir = path.join(outputRoot, runId);
 
 if (!fs.existsSync(outputRoot)) {
   fs.mkdirSync(outputRoot);
 }
 fs.mkdirSync(outputDir);
+fs.mkdirSync(errorDir);
 
 const run = async () => {
   const csvFilePath = path.join(__dirname, "./data.csv");
   const jsonArray = await csvtojsonV2().fromFile(csvFilePath);
   for (const entry of jsonArray) {
     const { latitude, longitude } = entry;
+    const callId = uuid.v4();
     try {
       const response = await axios.get(apiBaseUrl, {
         start,
@@ -36,10 +39,12 @@ const run = async () => {
         latitude,
         longitude,
       });
-      const filepath = path.join(outputDir, `${uuid.v4()}.csv`);
+      const filepath = path.join(outputDir, `${callId}.csv`);
       fs.writeFileSync(filepath, response.data);
     } catch (error) {
       console.error(error);
+      const filepath = path.join(errorDir, `${callId}.json`);
+      fs.writeFileSync(filepath, JSON.stringify(entry));
     }
   }
 };
