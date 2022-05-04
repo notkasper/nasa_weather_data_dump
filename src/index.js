@@ -57,7 +57,7 @@ const run = async () => {
       const filepath = path.join(errorDir, `${callId}.json`);
       fs.writeFileSync(filepath, JSON.stringify({ error, entry }));
     } finally {
-      loadingBar.update(1);
+      loadingBar.increment();
     }
   }
   loadingBar.stop();
