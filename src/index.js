@@ -63,4 +63,57 @@ const run = async () => {
   loadingBar.stop();
 };
 
-run();
+const merge = () => {
+  const headers = [
+    "YEAR",
+    "DOY",
+    "T2M",
+    "RH2M",
+    "GWETROOT",
+    "GWETPROF",
+    "T2MWET",
+    "PRECTOTCORR",
+    "latitude",
+    "longitude",
+  ];
+  const rawDir = path.join(outputRoot, "1651664562803");
+  const files = fs.readdirSync(rawDir);
+  let buffer = `${headers}\n`;
+
+  const loadingBar = new cliProgress.SingleBar(
+    {},
+    cliProgress.Presets.shades_classic
+  );
+  loadingBar.start(files.length, 0);
+
+  for (file of files) {
+    try {
+      const filepath = path.join(rawDir, file);
+      const data = fs.readFileSync(filepath).toString();
+      const [header, content] = data.split(
+        "YEAR,DOY,T2M,RH2M,GWETROOT,GWETPROF,T2MWET,PRECTOTCORR\n"
+      );
+      let lat = /Latitude\s*(?:-?\d+.\d+)/gm.exec(header);
+      lat = lat[0].split(/\s+/)[1];
+
+      let lon = /Longitude\s*(?:-?\d+.\d+)/gm.exec(header);
+      lon = lon[0].split(/\s+/)[1];
+
+      let newData = "";
+      content.split("\n").forEach((e) => {
+        const row = e + `,${lat},${lon}\n`;
+        newData += row;
+      });
+      buffer += newData;
+    } catch (error) {
+      const filepath = path.join(errorDir, `${uuid.v4()}.json`);
+      fs.writeFileSync(filepath, JSON.stringify(error));
+    } finally {
+      loadingBar.increment();
+    }
+  }
+  fs.writeFileSync("output.csv", buffer);
+  loadingBar.stop();
+};
+
+merge();
